@@ -1,0 +1,43 @@
+{
+  "name": "@hr-platform/db",
+  "version": "1.0.0",
+  "description": "Shared database schema, queries, and types for HR Platform",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./queries": "./src/queries/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun run src/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.8",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.11",
+    "@types/node": "^25.5.0",
+    "dotenv": "^17.3.1",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.7.3"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LYSI-Lab/hr-platform-db.git"
+  },
+  "files": [
+    "src/**/*.ts",
+    "drizzle.config.ts"
+  ]
+}

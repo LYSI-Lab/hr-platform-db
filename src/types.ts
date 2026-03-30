@@ -53,21 +53,24 @@ export const ResumeUploadSchema = z.object({
 // AI SCORING SCHEMAS (used by generateObject in Integriverse)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/** AI extracts structured data from raw resume text */
+/** AI extracts structured data from raw resume text.
+ * Uses .nullable() instead of .optional() because OpenAI/Azure structured
+ * output requires all properties in 'required' — nullable fields are always
+ * present in the JSON but can have a null value. */
 export const ParsedResumeDataSchema = z.object({
-  name: z.string().optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  location: z.string().optional(),
-  summary: z.string().optional(),
+  name: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  location: z.string().nullable(),
+  summary: z.string().nullable(),
   skills: z.array(z.string()),
   experience: z.array(
     z.object({
       title: z.string(),
       company: z.string(),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      duration: z.string().optional(),
+      startDate: z.string().nullable(),
+      endDate: z.string().nullable(),
+      duration: z.string().nullable(),
       description: z.string(),
     })
   ),
@@ -75,7 +78,7 @@ export const ParsedResumeDataSchema = z.object({
     z.object({
       degree: z.string(),
       institution: z.string(),
-      year: z.string().optional(),
+      year: z.string().nullable(),
     })
   ),
   certifications: z.array(z.string()),

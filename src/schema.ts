@@ -198,3 +198,36 @@ export const jobAnalysisRuns = pgTable('job_analysis_runs', {
 }));
 
 export type JobAnalysisRun = InferSelectModel<typeof jobAnalysisRuns>;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INTERVIEW INVITES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const inviteTypeEnum = pgEnum('invite_type', ['new', 'resend']);
+
+/**
+ * Candidate Invites — tracks interview invitation emails sent to candidates.
+ * Each row represents one email sent (supports resend history).
+ */
+export const candidateInvites = pgTable('candidate_invites', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  jobOfferId: uuid('job_offer_id').notNull().references(() => jobOffers.id, { onDelete: 'cascade' }),
+  analysisResultId: uuid('analysis_result_id').notNull().references(() => jobAnalysisResults.id, { onDelete: 'cascade' }),
+  candidateEmail: varchar('candidate_email', { length: 255 }).notNull(),
+  candidateName: varchar('candidate_name', { length: 255 }),
+  type: inviteTypeEnum('type').notNull().default('new'),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  interviewDate: varchar('interview_date', { length: 100 }),
+  interviewLink: text('interview_link'),
+  status: varchar('status', { length: 50 }).notNull().default('sent'), // sent | failed
+  errorMessage: text('error_message'),
+  sentAt: timestamp('sent_at').notNull().defaultNow(),
+}, (table) => ({
+  jobOfferIdIdx: index('ci_job_offer_id_idx').on(table.jobOfferId),
+  analysisResultIdIdx: index('ci_analysis_result_id_idx').on(table.analysisResultId),
+  candidateEmailIdx: index('ci_candidate_email_idx').on(table.candidateEmail),
+}));
+
+export type CandidateInvite = InferSelectModel<typeof candidateInvites>;

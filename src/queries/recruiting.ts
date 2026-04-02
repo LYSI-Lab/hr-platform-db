@@ -5,10 +5,12 @@ import {
   jobResumes,
   jobAnalysisResults,
   jobAnalysisRuns,
+  candidateInvites,
   type JobOffer,
   type JobResume,
   type JobAnalysisResult,
   type JobAnalysisRun,
+  type CandidateInvite,
   type ParsedResumeData,
 } from '../schema';
 
@@ -451,4 +453,78 @@ export async function completeAnalysisRun(
       errorMessage: errorMessage ?? null,
     })
     .where(eq(jobAnalysisRuns.id, id));
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CANDIDATE INVITES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export async function createCandidateInvite(data: {
+  jobOfferId: string;
+  analysisResultId: string;
+  candidateEmail: string;
+  candidateName?: string;
+  type: 'new' | 'resend';
+  subject: string;
+  body: string;
+  companyName?: string;
+  interviewDate?: string;
+  interviewLink?: string;
+  status?: 'sent' | 'failed';
+  errorMessage?: string;
+}): Promise<CandidateInvite> {
+  const [invite] = await db
+    .insert(candidateInvites)
+    .values({
+      jobOfferId: data.jobOfferId,
+      analysisResultId: data.analysisResultId,
+      candidateEmail: data.candidateEmail,
+      candidateName: data.candidateName ?? null,
+      type: data.type,
+      subject: data.subject,
+      body: data.body,
+      companyName: data.companyName ?? null,
+      interviewDate: data.interviewDate ?? null,
+      interviewLink: data.interviewLink ?? null,
+      status: data.status ?? 'sent',
+      errorMessage: data.errorMessage ?? null,
+    })
+    .returning();
+
+  return invite;
+}
+
+export async function getInvitesByJobId(jobOfferId: string): Promise<CandidateInvite[]> {
+  return db
+    .select()
+    .from(candidateInvites)
+    .where(eq(candidateInvites.jobOfferId, jobOfferId))
+    .orderBy(desc(candidateInvites.sentAt));
+}
+
+export async function getInvitesByResultId(analysisResultId: string): Promise<CandidateInvite[]> {
+  return db
+    .select()
+    .from(candidateInvites)
+    .where(eq(candidateInvites.analysisResultId, analysisResultId))
+    .orderBy(desc(candidateInvites.sentAt));
+}
+
+export async function getLatestInvitePerCandidate(
+  jobOfferId: string
+): Promise<Map<string, CandidateInvite>> {
+  const invites = await db
+    .select()
+    .from(candidateInvites)
+    .where(eq(candidateInvites.jobOfferId, jobOfferId))
+    .orderBy(desc(candidateInvites.sentAt));
+
+  // Keep only the most recent invite per analysisResultId
+  const map = new Map<string, CandidateInvite>();
+  for (const invite of invites) {
+    if (!map.has(invite.analysisResultId)) {
+      map.set(invite.analysisResultId, invite);
+    }
+  }
+  return map;
 }

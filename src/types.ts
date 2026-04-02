@@ -159,6 +159,22 @@ export interface RankedCandidateResult {
   }> | null;
 }
 
+/** Invite request payload */
+export interface SendInvitesPayload {
+  jobOfferId: string;
+  candidates: Array<{
+    analysisResultId: string;
+    candidateEmail: string;
+    candidateName: string | null;
+    type: 'new' | 'resend';
+  }>;
+  companyName: string;
+  interviewDate: string;
+  interviewLink: string;
+  subject: string;
+  body: string; // template with {candidateName}, {jobTitle}, {companyName}, {interviewDate}, {interviewLink}
+}
+
 /** Webhook payload sent from HR app to Integriverse */
 export interface AnalysisTriggerPayload {
   jobOfferId: string;

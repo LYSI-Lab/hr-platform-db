@@ -9,17 +9,20 @@ export {
   jobResumes,
   jobAnalysisResults,
   jobAnalysisRuns,
+  candidateInvites,
   // Enums
   jobOfferStatusEnum,
   resumeStatusEnum,
   analysisJobStatusEnum,
   candidateRecommendationEnum,
+  inviteTypeEnum,
   // Table types
   type User,
   type JobOffer,
   type JobResume,
   type JobAnalysisResult,
   type JobAnalysisRun,
+  type CandidateInvite,
   // JSONB types
   type ParsedResumeData,
   type MustHaveResult,
@@ -43,4 +46,5 @@ export {
   type AnalysisStatusResponse,
   type RankedCandidateResult,
   type AnalysisTriggerPayload,
+  type SendInvitesPayload,
 } from './types';

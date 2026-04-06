@@ -221,6 +221,11 @@ export const candidateInvites = pgTable('candidate_invites', {
   companyName: varchar('company_name', { length: 255 }),
   interviewDate: varchar('interview_date', { length: 100 }),
   interviewLink: text('interview_link'),
+  slotDate: varchar('slot_date', { length: 20 }),
+  slotStartTime: varchar('slot_start_time', { length: 10 }),
+  slotEndTime: varchar('slot_end_time', { length: 10 }),
+  meetLink: text('meet_link'),
+  calendarEventId: varchar('calendar_event_id', { length: 255 }),
   status: varchar('status', { length: 50 }).notNull().default('sent'), // sent | failed
   errorMessage: text('error_message'),
   sentAt: timestamp('sent_at').notNull().defaultNow(),

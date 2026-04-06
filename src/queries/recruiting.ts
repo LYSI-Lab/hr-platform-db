@@ -470,6 +470,11 @@ export async function createCandidateInvite(data: {
   companyName?: string;
   interviewDate?: string;
   interviewLink?: string;
+  slotDate?: string;
+  slotStartTime?: string;
+  slotEndTime?: string;
+  meetLink?: string;
+  calendarEventId?: string;
   status?: 'sent' | 'failed';
   errorMessage?: string;
 }): Promise<CandidateInvite> {
@@ -486,6 +491,11 @@ export async function createCandidateInvite(data: {
       companyName: data.companyName ?? null,
       interviewDate: data.interviewDate ?? null,
       interviewLink: data.interviewLink ?? null,
+      slotDate: data.slotDate ?? null,
+      slotStartTime: data.slotStartTime ?? null,
+      slotEndTime: data.slotEndTime ?? null,
+      meetLink: data.meetLink ?? null,
+      calendarEventId: data.calendarEventId ?? null,
       status: data.status ?? 'sent',
       errorMessage: data.errorMessage ?? null,
     })

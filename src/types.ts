@@ -167,12 +167,14 @@ export interface SendInvitesPayload {
     candidateEmail: string;
     candidateName: string | null;
     type: 'new' | 'resend';
+    slotDate?: string;
+    slotStartTime?: string;
+    slotEndTime?: string;
   }>;
   companyName: string;
-  interviewDate: string;
-  interviewLink: string;
   subject: string;
   body: string; // template with {candidateName}, {jobTitle}, {companyName}, {interviewDate}, {interviewLink}
+  duration?: number;
 }
 
 /** Webhook payload sent from HR app to Integriverse */

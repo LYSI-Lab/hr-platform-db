@@ -15,6 +15,13 @@
       "when": 1775142474621,
       "tag": "0001_zippy_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775486631576,
+      "tag": "0002_cold_black_bolt",
+      "breakpoints": true
     }
   ]
 }

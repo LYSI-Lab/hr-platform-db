@@ -29,6 +29,13 @@
       "when": 1776711104760,
       "tag": "0003_nice_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776711741667,
+      "tag": "0004_backfill_uploader",
+      "breakpoints": true
     }
   ]
 }

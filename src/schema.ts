@@ -120,12 +120,13 @@ export type JobOffer = InferSelectModel<typeof jobOffers>;
 export const jobResumes = pgTable('job_resumes', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   jobOfferId: uuid('job_offer_id').notNull().references(() => jobOffers.id, { onDelete: 'cascade' }),
+  uploadedByUserId: uuid('uploaded_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   candidateName: varchar('candidate_name', { length: 255 }),
   candidateEmail: varchar('candidate_email', { length: 255 }),
   originalFileName: varchar('original_file_name', { length: 255 }).notNull(),
   fileStorageUrl: text('file_storage_url').notNull(),
   mimeType: varchar('mime_type', { length: 100 }).notNull(),
-  fileSize: integer('file_size').notNull(), // bytes
+  fileSize: integer('file_size').notNull(),
   rawText: text('raw_text'),
   parsedData: jsonb('parsed_data').$type<ParsedResumeData>(),
   status: resumeStatusEnum('status').notNull().default('uploaded'),
@@ -133,6 +134,7 @@ export const jobResumes = pgTable('job_resumes', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   jobOfferIdIdx: index('job_resumes_job_offer_id_idx').on(table.jobOfferId),
+  uploadedByUserIdIdx: index('job_resumes_uploaded_by_user_id_idx').on(table.uploadedByUserId),
   statusIdx: index('job_resumes_status_idx').on(table.status),
   candidateEmailIdx: index('job_resumes_candidate_email_idx').on(table.candidateEmail),
 }));

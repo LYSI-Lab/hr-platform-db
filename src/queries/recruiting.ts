@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, count, ne, inArray, or } from 'drizzle-orm';
+import { eq, and, desc, sql, count, ne, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import {
   jobOffers,
@@ -76,10 +76,13 @@ export async function getJobOffersByUser(params: {
 }
 
 /**
- * List job offers visible to the actor.
+ * List job offers visible to the actor in their active workspace.
  *
- * Returns jobs the actor either created personally (no organization) or that
- * belong to an organization the actor is a member of. Ordered by newest first.
+ * Workspaces are exclusive: personal mode returns only the actor's personal
+ * jobs (organization is null), organization mode returns only jobs belonging
+ * to the active organization. Personal jobs never bleed into an organization
+ * view and vice versa, which mirrors how teams expect Slack-style workspaces
+ * to behave. Ordered by newest first.
  */
 export async function getJobOffersForActor(params: {
   actor: Actor;
@@ -88,20 +91,16 @@ export async function getJobOffersForActor(params: {
 }): Promise<JobOffer[]> {
   const { actor, limit = 50, offset = 0 } = params;
 
-  const personalVisibility = and(
-    sql`${jobOffers.organizationId} IS NULL`,
-    eq(jobOffers.userId, actor.userId),
-  );
+  const inPersonalMode = actor.clerkOrgIds.length === 0;
 
-  const orgVisibility =
-    actor.clerkOrgIds.length > 0
-      ? inArray(jobOffers.organizationId, [...actor.clerkOrgIds])
-      : sql`false`;
+  const where = inPersonalMode
+    ? and(sql`${jobOffers.organizationId} IS NULL`, eq(jobOffers.userId, actor.userId))
+    : inArray(jobOffers.organizationId, [...actor.clerkOrgIds]);
 
   return db
     .select()
     .from(jobOffers)
-    .where(or(personalVisibility, orgVisibility))
+    .where(where)
     .orderBy(desc(jobOffers.createdAt))
     .limit(limit)
     .offset(offset);

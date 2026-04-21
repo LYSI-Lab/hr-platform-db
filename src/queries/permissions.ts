@@ -32,16 +32,30 @@ export interface ResumePermissions {
   canDelete: boolean;
 }
 
-function isMemberOfJobOrg(actor: Actor, job: JobOffer): boolean {
-  return job.organizationId !== null && actor.clerkOrgIds.includes(job.organizationId);
-}
-
 function isAdminOfJobOrg(actor: Actor, job: JobOffer): boolean {
   return job.organizationId !== null && actor.adminClerkOrgIds.includes(job.organizationId);
 }
 
 function isJobCreator(actor: Actor, job: JobOffer): boolean {
   return job.userId === actor.userId;
+}
+
+/**
+ * True when the job belongs to the actor's active workspace.
+ *
+ * Workspaces are exclusive: a personal job is only visible in personal mode,
+ * and an organization job is only visible while that organization is active.
+ * This prevents cross-workspace bleed when a user has both personal jobs
+ * and organization memberships.
+ */
+function isJobInActiveWorkspace(actor: Actor, job: JobOffer): boolean {
+  const inPersonalMode = actor.clerkOrgIds.length === 0;
+
+  if (inPersonalMode) {
+    return job.organizationId === null && isJobCreator(actor, job);
+  }
+
+  return job.organizationId !== null && actor.clerkOrgIds.includes(job.organizationId);
 }
 
 async function loadJob(jobId: string): Promise<JobOffer | null> {
@@ -56,17 +70,17 @@ async function loadJob(jobId: string): Promise<JobOffer | null> {
  * to avoid N extra database round-trips.
  */
 export function computeJobPermissions(actor: Actor, job: JobOffer): JobPermissions {
+  const visible = isJobInActiveWorkspace(actor, job);
   const creator = isJobCreator(actor, job);
-  const member = creator || isMemberOfJobOrg(actor, job);
   const admin = isAdminOfJobOrg(actor, job);
 
   return {
-    canView: member,
-    canEdit: creator,
-    canDelete: creator || admin,
-    canInvite: creator,
-    canUpload: member,
-    canAnalyze: member,
+    canView: visible,
+    canEdit: visible && creator,
+    canDelete: visible && (creator || admin),
+    canInvite: visible && creator,
+    canUpload: visible,
+    canAnalyze: visible,
   };
 }
 

@@ -153,6 +153,7 @@ export async function deleteJobOffer(id: string): Promise<boolean> {
 
 export async function createJobResume(data: {
   jobOfferId: string;
+  uploadedByUserId?: string;
   originalFileName: string;
   fileStorageUrl: string;
   mimeType: string;

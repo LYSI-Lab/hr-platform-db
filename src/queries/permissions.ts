@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { jobOffers, jobResumes, type JobOffer } from '../schema';
+import { jobOffers, jobResumes, type JobOffer, type JobResume } from '../schema';
 
 /**
  * Authorization context for a permission check.
@@ -15,6 +15,21 @@ export interface Actor {
   clerkOrgIds: readonly string[];
   /** Subset of {@link clerkOrgIds} where the actor has the `admin` role. */
   adminClerkOrgIds: readonly string[];
+}
+
+/** Permission flags for a specific job, computed without additional queries. */
+export interface JobPermissions {
+  canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canInvite: boolean;
+  canUpload: boolean;
+  canAnalyze: boolean;
+}
+
+/** Permission flags for a specific resume, computed without additional queries. */
+export interface ResumePermissions {
+  canDelete: boolean;
 }
 
 function isMemberOfJobOrg(actor: Actor, job: JobOffer): boolean {
@@ -35,6 +50,39 @@ async function loadJob(jobId: string): Promise<JobOffer | null> {
 }
 
 /**
+ * Compute every permission for a job in one pass, given the pre-loaded row.
+ *
+ * Useful for list endpoints where the caller already holds the job and wants
+ * to avoid N extra database round-trips.
+ */
+export function computeJobPermissions(actor: Actor, job: JobOffer): JobPermissions {
+  const creator = isJobCreator(actor, job);
+  const member = creator || isMemberOfJobOrg(actor, job);
+  const admin = isAdminOfJobOrg(actor, job);
+
+  return {
+    canView: member,
+    canEdit: creator,
+    canDelete: creator || admin,
+    canInvite: creator,
+    canUpload: member,
+    canAnalyze: member,
+  };
+}
+
+/**
+ * Compute resume-level permissions given the pre-loaded resume and parent job.
+ */
+export function computeResumePermissions(
+  actor: Actor,
+  resume: JobResume,
+  job: JobOffer,
+): ResumePermissions {
+  if (resume.uploadedByUserId === actor.userId) return { canDelete: true };
+  return { canDelete: computeJobPermissions(actor, job).canDelete };
+}
+
+/**
  * True if the actor can view a job and its resumes.
  *
  * Creators always have access. For org-scoped jobs, any member of the owning
@@ -43,14 +91,14 @@ async function loadJob(jobId: string): Promise<JobOffer | null> {
 export async function canViewJob(actor: Actor, jobId: string): Promise<boolean> {
   const job = await loadJob(jobId);
   if (!job) return false;
-  return isJobCreator(actor, job) || isMemberOfJobOrg(actor, job);
+  return computeJobPermissions(actor, job).canView;
 }
 
 /** True if the actor can edit a job's details. Restricted to the creator. */
 export async function canEditJob(actor: Actor, jobId: string): Promise<boolean> {
   const job = await loadJob(jobId);
   if (!job) return false;
-  return isJobCreator(actor, job);
+  return computeJobPermissions(actor, job).canEdit;
 }
 
 /**
@@ -62,7 +110,7 @@ export async function canEditJob(actor: Actor, jobId: string): Promise<boolean> 
 export async function canDeleteJob(actor: Actor, jobId: string): Promise<boolean> {
   const job = await loadJob(jobId);
   if (!job) return false;
-  return isJobCreator(actor, job) || isAdminOfJobOrg(actor, job);
+  return computeJobPermissions(actor, job).canDelete;
 }
 
 /**
@@ -74,7 +122,7 @@ export async function canDeleteJob(actor: Actor, jobId: string): Promise<boolean
 export async function canInviteForJob(actor: Actor, jobId: string): Promise<boolean> {
   const job = await loadJob(jobId);
   if (!job) return false;
-  return isJobCreator(actor, job);
+  return computeJobPermissions(actor, job).canInvite;
 }
 
 /** True if the actor can upload resumes to a job. Any viewer may upload. */

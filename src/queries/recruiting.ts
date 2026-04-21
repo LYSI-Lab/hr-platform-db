@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, count, ne, inArray } from 'drizzle-orm';
+import { eq, and, desc, sql, count, ne, inArray, or } from 'drizzle-orm';
 import { db } from '../db';
 import {
   jobOffers,
@@ -13,6 +13,7 @@ import {
   type CandidateInvite,
   type ParsedResumeData,
 } from '../schema';
+import type { Actor } from './permissions';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // JOB OFFERS
@@ -69,6 +70,38 @@ export async function getJobOffersByUser(params: {
     .select()
     .from(jobOffers)
     .where(and(...conditions))
+    .orderBy(desc(jobOffers.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+/**
+ * List job offers visible to the actor.
+ *
+ * Returns jobs the actor either created personally (no organization) or that
+ * belong to an organization the actor is a member of. Ordered by newest first.
+ */
+export async function getJobOffersForActor(params: {
+  actor: Actor;
+  limit?: number;
+  offset?: number;
+}): Promise<JobOffer[]> {
+  const { actor, limit = 50, offset = 0 } = params;
+
+  const personalVisibility = and(
+    sql`${jobOffers.organizationId} IS NULL`,
+    eq(jobOffers.userId, actor.userId),
+  );
+
+  const orgVisibility =
+    actor.clerkOrgIds.length > 0
+      ? inArray(jobOffers.organizationId, [...actor.clerkOrgIds])
+      : sql`false`;
+
+  return db
+    .select()
+    .from(jobOffers)
+    .where(or(personalVisibility, orgVisibility))
     .orderBy(desc(jobOffers.createdAt))
     .limit(limit)
     .offset(offset);

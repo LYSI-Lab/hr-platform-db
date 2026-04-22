@@ -13,6 +13,7 @@ import {
   type CandidateInvite,
   type ParsedResumeData,
 } from '../schema';
+import type { Actor } from './permissions';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // JOB OFFERS
@@ -74,6 +75,37 @@ export async function getJobOffersByUser(params: {
     .offset(offset);
 }
 
+/**
+ * List job offers visible to the actor in their active workspace.
+ *
+ * Workspaces are exclusive: personal mode returns only the actor's personal
+ * jobs (organization is null), organization mode returns only jobs belonging
+ * to the active organization. Personal jobs never bleed into an organization
+ * view and vice versa, which mirrors how teams expect Slack-style workspaces
+ * to behave. Ordered by newest first.
+ */
+export async function getJobOffersForActor(params: {
+  actor: Actor;
+  limit?: number;
+  offset?: number;
+}): Promise<JobOffer[]> {
+  const { actor, limit = 50, offset = 0 } = params;
+
+  const inPersonalMode = actor.clerkOrgIds.length === 0;
+
+  const where = inPersonalMode
+    ? and(sql`${jobOffers.organizationId} IS NULL`, eq(jobOffers.userId, actor.userId))
+    : inArray(jobOffers.organizationId, [...actor.clerkOrgIds]);
+
+  return db
+    .select()
+    .from(jobOffers)
+    .where(where)
+    .orderBy(desc(jobOffers.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
 export async function getJobOfferById(id: string): Promise<JobOffer | null> {
   const [job] = await db
     .select()
@@ -120,6 +152,7 @@ export async function deleteJobOffer(id: string): Promise<boolean> {
 
 export async function createJobResume(data: {
   jobOfferId: string;
+  uploadedByUserId?: string;
   originalFileName: string;
   fileStorageUrl: string;
   mimeType: string;
